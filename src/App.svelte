@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import catsIcon from './assets/cats-icon.png';
   import FeedingCard from './lib/components/FeedingCard.svelte'
   import HistoryList from './lib/components/HistoryList.svelte'
   import {
@@ -147,7 +148,11 @@
         </button>
       </div>
     </div>
-    <h1>{copy.hero.title}</h1>
+    <div class="hero__title">
+      <img src={catsIcon} alt="Cats" class="hero__icon" />
+      <h1>{copy.hero.title}</h1>
+      <img src={catsIcon} alt="Cats" class="hero__icon" />
+    </div>
     <p class="lead">{copy.hero.lead}</p>
   </section>
 

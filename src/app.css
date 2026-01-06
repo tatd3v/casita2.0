@@ -128,6 +128,19 @@ body {
   font-size: clamp(2rem, 4vw, 2.8rem);
 }
 
+.hero__title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0 0 0.6rem;
+}
+
+.hero__icon {
+  width: 3rem;
+  height: 3rem;
+  object-fit: contain;
+}
+
 .lead {
   margin: 0;
   max-width: 540px;

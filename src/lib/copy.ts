@@ -5,7 +5,7 @@ export const COPIES: Record<Locale, AppCopy> = {
     hero: {
       eyebrow: 'Muchu & Apolo · Casita2.0',
       title: 'Control de Comida ',
-      lead: 'Marca quién alimentó a los peques en la mañana y en la tarde para evitar duplicados y mantener a toda la comunidad sincronizada.',
+      lead: 'Marca quién alimentó a los peques en la mañana y en la tarde para evitar duplicados y mantener a toda la casita sincronizada.',
     },
     general: {
       fallbackCaretaker: 'Comunidad',
