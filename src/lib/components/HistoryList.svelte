@@ -20,8 +20,8 @@
     return false
   }
 
-  // Initialize collapsed state based on screen size
-  $: historyCollapsed = isTinyScreen()
+  // Initialize collapsed state based on screen size and date count
+  $: historyCollapsed = isTinyScreen() && Object.keys(sortedGroupedHistory).length >= 2
 
   // Handle window resize to auto-collapse/expand based on screen size
   let resizeTimeout: number
@@ -29,7 +29,7 @@
   const handleResize = () => {
     clearTimeout(resizeTimeout)
     resizeTimeout = setTimeout(() => {
-      historyCollapsed = isTinyScreen()
+      historyCollapsed = isTinyScreen() && Object.keys(sortedGroupedHistory).length >= 2
     }, 100) // Debounce resize events
   }
 
@@ -152,13 +152,15 @@
 <section class="history" class:collapsed={historyCollapsed}>
   <header>
     <h3>{copy.title}</h3>
-    <button class="history-toggle" on:click={toggleHistoryCollapse} aria-label="Toggle history">
-      <div class="toggle-icon" class:collapsed={historyCollapsed}>
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-        </svg>
-      </div>
-    </button>
+    {#if Object.keys(sortedGroupedHistory).length >= 2}
+      <button class="history-toggle" on:click={toggleHistoryCollapse} aria-label="Toggle history">
+        <div class="toggle-icon" class:collapsed={historyCollapsed}>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+          </svg>
+        </div>
+      </button>
+    {/if}
   </header>
 
   {#if history.length}
@@ -287,17 +289,17 @@
     overflow: visible;
   }
 
-  .history-groups.collapsed {
-    max-height: 200px;
-    overflow: hidden;
-    transition: max-height 300ms ease;
-  }
-
   /* When collapsed, show today's content fully */
   .history.collapsed .history-groups {
     max-height: none;
     overflow: visible;
     transition: max-height 300ms ease;
+  }
+
+  /* Override collapsed state for today's content */
+  .history.collapsed .history-groups.collapsed {
+    max-height: none !important;
+    overflow: visible !important;
   }
 
   /* Allow today's group to be fully visible when collapsed */
