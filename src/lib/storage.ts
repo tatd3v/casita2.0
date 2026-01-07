@@ -36,13 +36,15 @@ export const blankState = (): FeedingState => ({
 export const loadState = async (): Promise<FeedingState> => {
   try {
     const today = todayId()
+    console.log('Loading state for date:', today)
+    
     const { data, error } = await supabase
       .from('feeding_states')
       .select('*')
       .eq('date', today)
-      .single()
+      .maybeSingle()
 
-    if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
+    if (error) {
       console.error('Error loading state:', error)
       return blankState()
     }
@@ -75,6 +77,7 @@ export const loadState = async (): Promise<FeedingState> => {
 // Save feeding state to Supabase
 export const saveState = async (state: FeedingState): Promise<void> => {
   try {
+    console.log('Saving state:', state)
     const { data: { user } } = await supabase.auth.getUser()
     
     const { error } = await supabase
@@ -90,6 +93,8 @@ export const saveState = async (state: FeedingState): Promise<void> => {
 
     if (error) {
       console.error('Error saving state:', error)
+    } else {
+      console.log('State saved successfully')
     }
   } catch (error) {
     console.error('Error saving state:', error)
@@ -151,11 +156,13 @@ export const addHistoryRecord = async (record: FeedingRecord, currentHistory: Fe
 // Remove history record from Supabase (only the most recent one for the slot)
 export const removeHistoryRecord = async (slot: FeedingSlot, date: string, currentHistory: FeedingRecord[]): Promise<FeedingRecord[]> => {
   try {
-    // Find the most recent record for this slot and date
+    console.log('Removing history record:', { slot, date })
+    
+    // Use overlap operator with proper array casting for PostgreSQL text[] column
     const { data: records, error: fetchError } = await supabase
       .from('feeding_history')
       .select('*')
-      .eq('slot', slot)
+      .filter('slot', 'ov', `{${slot}}`)
       .eq('date', date)
       .order('timestamp', { ascending: false })
       .limit(1)
@@ -165,20 +172,26 @@ export const removeHistoryRecord = async (slot: FeedingSlot, date: string, curre
       return currentHistory
     }
 
+    console.log('Found records to delete:', records)
+
     if (records && records.length > 0) {
       const mostRecentRecord = records[0]
       
-      // Delete only the most recent record
+      console.log('Deleting record with timestamp:', mostRecentRecord.timestamp)
+      
+      // Delete by timestamp (unique identifier)
       const { error: deleteError } = await supabase
         .from('feeding_history')
         .delete()
-        .eq('slot', slot)
-        .eq('date', date)
         .eq('timestamp', mostRecentRecord.timestamp)
 
       if (deleteError) {
         console.error('Error removing history record:', deleteError)
+      } else {
+        console.log('Successfully deleted record')
       }
+    } else {
+      console.log('No records found to delete')
     }
 
     // Return updated history
