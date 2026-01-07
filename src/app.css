@@ -42,18 +42,32 @@ body {
 .shell {
   max-width: 960px;
   margin: 0 auto;
-  padding: 2.5rem 1rem 4rem;
+  padding: 1.5rem 1rem 3rem;
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
+  gap: 2rem;
+}
+
+@media (max-width: 768px) {
+  .shell {
+    padding: 1rem 0.75rem 2rem;
+    gap: 1.5rem;
+  }
 }
 
 .hero {
   background: rgba(255, 254, 236, 0.8);
   border-radius: 1.75rem;
-  padding: 2.5rem;
+  padding: 2rem;
   box-shadow: 0 1.5rem 3.5rem rgba(71, 85, 105, 0.12);
   border: 1px solid rgba(255, 254, 236, 0.9);
+}
+
+@media (max-width: 768px) {
+  .hero {
+    padding: 1.5rem;
+    border-radius: 1.25rem;
+  }
 }
 
 .hero__top {
@@ -61,12 +75,29 @@ body {
   justify-content: space-between;
   gap: 1rem;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .hero__top {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
 }
 
 .hero__actions {
   display: flex;
   gap: 0.75rem;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .hero__actions {
+    justify-content: center;
+    gap: 0.5rem;
+  }
 }
 
 .eyebrow {
@@ -80,13 +111,24 @@ body {
 .language {
   border: none;
   border-radius: 999px;
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1.2rem;
   font-size: 0.85rem;
   background: var(--color-indigo);
   color: white;
   cursor: pointer;
   box-shadow: 0 0.5rem 1.5rem rgba(168, 138, 237, 0.25);
   transition: transform 150ms ease, box-shadow 150ms ease;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (max-width: 768px) {
+  .language {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    flex: 1;
+    min-width: 80px;
+  }
 }
 
 .language:hover {
@@ -102,7 +144,7 @@ body {
 .reset-button {
   border: none;
   border-radius: 999px;
-  padding: 0.5rem 1rem;
+  padding: 0.6rem 1.2rem;
   font-size: 0.85rem;
   background: var(--color-pear);
   color: var(--color-slate-dark);
@@ -110,6 +152,17 @@ body {
   box-shadow: 0 0.5rem 1.5rem rgba(203, 216, 59, 0.25);
   transition: transform 150ms ease, box-shadow 150ms ease;
   font-weight: 600;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (max-width: 768px) {
+  .reset-button {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    flex: 1;
+    min-width: 80px;
+  }
 }
 
 .reset-button:hover {
@@ -133,12 +186,27 @@ body {
   align-items: center;
   gap: 1rem;
   margin: 0 0 0.6rem;
+  justify-content: center;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .hero__title {
+    gap: 0.75rem;
+  }
 }
 
 .hero__icon {
   width: 3rem;
   height: 3rem;
   object-fit: contain;
+}
+
+@media (max-width: 768px) {
+  .hero__icon {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
 }
 
 .lead {
@@ -155,12 +223,31 @@ body {
 .cards {
   display: grid;
   gap: 1.5rem;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+@media (max-width: 768px) {
+  .cards {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
 }
 
 @media (min-width: 900px) {
   .dashboard {
     grid-template-columns: 2fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .dashboard {
+    gap: 1rem;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .mobile-order {
+    order: -1;
   }
 }
 
