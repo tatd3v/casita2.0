@@ -12,6 +12,10 @@ export const COPIES: Record<Locale, AppCopy> = {
       languageName: 'Español',
       toggleLabel: 'English',
       resetButton: 'Reiniciar día',
+      resetModalTitle: '¿Reiniciar el día?',
+      resetModalMessage: 'Esto borrará todos los registros de alimentación de hoy y comenzará de nuevo. Esta acción no se puede deshacer.',
+      resetModalConfirm: 'Sí, reiniciar',
+      resetModalCancel: 'Cancelar',
     },
     card: {
       slotLabels: {
@@ -58,6 +62,10 @@ export const COPIES: Record<Locale, AppCopy> = {
       languageName: 'English',
       toggleLabel: 'Español',
       resetButton: 'Reset day',
+      resetModalTitle: 'Reset the day?',
+      resetModalMessage: 'This will delete all feeding records for today and start fresh. This action cannot be undone.',
+      resetModalConfirm: 'Yes, reset',
+      resetModalCancel: 'Cancel',
     },
     card: {
       slotLabels: {
