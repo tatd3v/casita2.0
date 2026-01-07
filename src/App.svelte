@@ -3,6 +3,7 @@
   import catsIcon from './assets/cats-icon.png';
   import FeedingCard from './lib/components/FeedingCard.svelte'
   import HistoryList from './lib/components/HistoryList.svelte'
+  import ConfirmModal from './lib/components/ConfirmModal.svelte'
   import {
     addHistoryRecord,
     blankState,
@@ -34,6 +35,7 @@
     evening: '',
   }
   let locale: Locale = 'es'
+  let showResetModal = false
   $: copy = COPIES[locale]
 
   onMount(() => {
@@ -118,11 +120,19 @@
   }
 
   const handleManualReset = async () => {
+    showResetModal = true
+  }
+
+  const confirmReset = async () => {
     state = await manualReset()
     caretakers = { morning: '', evening: '' }
     selectedCaretakers = { morning: 'other', evening: 'other' }
     customCaretakers = { morning: '', evening: '' }
-    // Keep all history records - don't clear today's records on manual reset
+    showResetModal = false
+  }
+
+  const cancelReset = () => {
+    showResetModal = false
   }
 
   const toggleSlot = async (slot: FeedingSlot) => {
@@ -224,3 +234,13 @@
     </div>
   </section>
 </main>
+
+<ConfirmModal
+  isOpen={showResetModal}
+  title={copy.general.resetModalTitle}
+  message={copy.general.resetModalMessage}
+  confirmText={copy.general.resetModalConfirm}
+  cancelText={copy.general.resetModalCancel}
+  onConfirm={confirmReset}
+  onCancel={cancelReset}
+/>
