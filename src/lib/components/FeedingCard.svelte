@@ -39,11 +39,18 @@
     return false;
   })();
 
-  // Auto-collapse when status changes to done or when time-disabled (on all screens)
-  $: if (status.done || isTimeDisabled) {
-    isExpanded = false;
-  } else if (!status.done && !isTimeDisabled) {
-    isExpanded = true;
+  // Auto-collapse when status changes to done or when time-disabled (screen-size aware)
+  $: if (typeof window !== 'undefined') {
+    if (isTimeDisabled && window.innerWidth <= 480) {
+      // Always collapse time-disabled cards on tiny screens
+      isExpanded = false;
+    } else if ((status.done || isTimeDisabled) && window.innerWidth <= 768) {
+      // Collapse done cards on mobile screens
+      isExpanded = false;
+    } else if (!status.done && !isTimeDisabled) {
+      // Expand available cards
+      isExpanded = true;
+    }
   }
 
   const handleSelectChange = (event: Event) => {
