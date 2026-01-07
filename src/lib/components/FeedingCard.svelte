@@ -20,10 +20,29 @@
 
   let isExpanded = true;
 
-  // Auto-collapse when status changes to done
-  $: if (status.done && window.innerWidth <= 768) {
+  // Time-based availability logic
+  const getCurrentHour = () => {
+    if (typeof window !== 'undefined') {
+      return new Date().getHours();
+    }
+    return 12; // Default to noon for SSR
+  };
+
+  // Check if card should be disabled based on time
+  $: isTimeDisabled = (() => {
+    const hour = getCurrentHour();
+    if (status.slot === 'morning') {
+      return hour >= 12; // Disable morning after noon (12:00)
+    } else if (status.slot === 'evening') {
+      return hour < 12; // Disable afternoon before noon (12:00)
+    }
+    return false;
+  })();
+
+  // Auto-collapse when status changes to done or when time-disabled (on all screens)
+  $: if (status.done || isTimeDisabled) {
     isExpanded = false;
-  } else if (!status.done) {
+  } else if (!status.done && !isTimeDisabled) {
     isExpanded = true;
   }
 
@@ -40,17 +59,17 @@
   };
 
   const toggleExpanded = () => {
-    // Only allow toggling on mobile screens
-    if (window.innerWidth <= 768) {
+    // Only allow toggling on mobile screens and if not time-disabled
+    if (window.innerWidth <= 768 && !isTimeDisabled) {
       isExpanded = !isExpanded;
     }
   };
 </script>
 
-<article class={`card ${status.done ? 'card--done' : 'card--pending'} ${!isExpanded ? 'card--collapsed' : ''}`}>
+<article class={`card ${status.done ? 'card--done' : 'card--pending'} ${!isExpanded ? 'card--collapsed' : ''} ${isTimeDisabled ? 'card--disabled' : ''}`}>
   <header class="card-header" on:click={toggleExpanded}>
     <h2>{copy.slotLabels[status.slot]}</h2>
-    <span class={`badge ${status.done ? 'badge--done' : 'badge--pending'}`}>
+    <span class={`badge ${status.done ? 'badge--done' : 'badge--pending'} ${isTimeDisabled ? 'badge--disabled' : ''}`}>
       {status.done ? copy.badge.done : copy.badge.pending}
     </span>
     <div class="toggle-icon {isExpanded ? '' : 'collapsed'}">
@@ -83,7 +102,7 @@
           value={selectedCaretaker}
           on:change={handleSelectChange}
           aria-label={copy.ariaLabel(copy.slotLabels[status.slot])}
-          disabled={status.done}
+          disabled={status.done || isTimeDisabled}
         >
           <option value="other">{copy.otherOption}</option>
           {#each CARETAKER_NAMES as name}
@@ -100,12 +119,12 @@
             placeholder={copy.placeholder}
             value={customCaretaker}
             on:input={handleInputChange}
-            disabled={status.done}
+            disabled={status.done || isTimeDisabled}
           />
         </label>
       {/if}
 
-      <button class="primary" on:click={onToggle}>
+      <button class="primary" on:click={onToggle} disabled={status.done || isTimeDisabled}>
         {status.done ? copy.button.done : copy.button.pending}
       </button>
     </div>
@@ -397,5 +416,18 @@
 
   .card--done .primary:focus-visible {
     outline-color: var(--color-pear);
+  }
+
+  .card--disabled {
+    opacity: 0.6;
+    pointer-events: none;
+    min-height: auto;
+    padding: 0.5rem;
+  }
+
+  .badge--disabled {
+    opacity: 0.5;
+    background: var(--color-slate-light);
+    color: var(--color-slate-dark);
   }
 </style>
