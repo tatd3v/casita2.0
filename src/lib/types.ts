@@ -71,6 +71,7 @@ export interface AppCopy {
     resetModalMessage: string
     resetModalConfirm: string
     resetModalCancel: string
+    loading: string
   }
   card: FeedingCardCopy
   history: HistoryCopy
