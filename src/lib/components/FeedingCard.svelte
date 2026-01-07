@@ -1,25 +1,34 @@
 <script lang="ts">
-  import type { FeedingCardCopy, FeedingStatus, FeedingSlot, CaretakerName } from '../types'
-  import { CARETAKER_NAMES } from '../types'
+  import type {
+    FeedingCardCopy,
+    FeedingStatus,
+    FeedingSlot,
+    CaretakerName,
+  } from '../types';
+  import { CARETAKER_NAMES } from '../types';
 
-  export let status: FeedingStatus
-  export let caretaker: string
-  export let selectedCaretaker: CaretakerName | 'other' = 'other'
-  export let customCaretaker: string = ''
-  export let onSelectedCaretakerChange: (value: CaretakerName | 'other') => void
-  export let onCustomCaretakerChange: (value: string) => void
-  export let onToggle: () => void
-  export let copy: FeedingCardCopy
+  export let status: FeedingStatus;
+  export let caretaker: string;
+  export let selectedCaretaker: CaretakerName | 'other' = 'other';
+  export let customCaretaker: string = '';
+  export let onSelectedCaretakerChange: (
+    value: CaretakerName | 'other',
+  ) => void;
+  export let onCustomCaretakerChange: (value: string) => void;
+  export let onToggle: () => void;
+  export let copy: FeedingCardCopy;
 
   const handleSelectChange = (event: Event) => {
-    const value = (event.currentTarget as HTMLSelectElement).value as CaretakerName | 'other'
-    onSelectedCaretakerChange(value)
-  }
+    const value = (event.currentTarget as HTMLSelectElement).value as
+      | CaretakerName
+      | 'other';
+    onSelectedCaretakerChange(value);
+  };
 
   const handleInputChange = (event: Event) => {
-    const value = (event.currentTarget as HTMLInputElement).value
-    onCustomCaretakerChange(value)
-  }
+    const value = (event.currentTarget as HTMLInputElement).value;
+    onCustomCaretakerChange(value);
+  };
 </script>
 
 <article class={`card ${status.done ? 'card--done' : 'card--pending'}`}>
@@ -38,7 +47,10 @@
 
   {#if status.timestamp}
     <p class="card__timestamp">
-      {new Date(status.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+      {new Date(status.timestamp).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      })}
     </p>
   {/if}
 
@@ -84,7 +96,9 @@
     gap: 0.9rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
     box-shadow: 0 1.25rem 3rem rgba(15, 44, 25, 0.15);
-    transition: transform 200ms ease, border-color 300ms ease;
+    transition:
+      transform 200ms ease,
+      border-color 300ms ease;
     min-height: 260px;
   }
 
@@ -94,12 +108,20 @@
   }
 
   .card--pending {
-    background: linear-gradient(145deg, var(--color-ivory), var(--color-ivory-dark));
+    background: linear-gradient(
+      145deg,
+      var(--color-ivory),
+      var(--color-ivory-dark)
+    );
     border-color: rgba(168, 138, 237, 0.2);
   }
 
   .card--done {
-    background: linear-gradient(145deg, rgba(203, 216, 59, 0.15), rgba(203, 216, 59, 0.25));
+    background: linear-gradient(
+      145deg,
+      rgba(203, 216, 59, 0.15),
+      rgba(203, 216, 59, 0.25)
+    );
     border-color: rgba(203, 216, 59, 0.3);
   }
 
@@ -150,7 +172,8 @@
     font-size: 0.9rem;
   }
 
-  input, select {
+  input,
+  select {
     border-radius: 0.9rem;
     border: 2px solid rgba(203, 216, 59, 0.2);
     padding: 0.65rem 0.9rem;
@@ -158,20 +181,25 @@
     font-family: inherit;
     background: var(--color-ivory);
     color: var(--color-slate-dark);
-    transition: border-color 150ms ease, box-shadow 150ms ease;
+    transition:
+      border-color 150ms ease,
+      box-shadow 150ms ease;
   }
 
-  input:focus, select:focus {
+  input:focus,
+  select:focus {
     outline: none;
     border-color: var(--color-pear);
     box-shadow: 0 0 0 3px rgba(203, 216, 59, 0.1);
   }
 
-  input::placeholder, select::placeholder {
+  input::placeholder,
+  select::placeholder {
     color: var(--color-slate-light);
   }
 
-  input:disabled, select:disabled {
+  input:disabled,
+  select:disabled {
     opacity: 0.6;
     cursor: not-allowed;
   }

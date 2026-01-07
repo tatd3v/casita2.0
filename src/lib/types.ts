@@ -72,3 +72,60 @@ export interface AppCopy {
   card: FeedingCardCopy
   history: HistoryCopy
 }
+
+// Supabase database types
+export interface Database {
+  public: {
+    Tables: {
+      feeding_states: {
+        Row: {
+          id: string
+          date: string
+          slots: Record<FeedingSlot, FeedingStatus>
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          date: string
+          slots: Record<FeedingSlot, FeedingStatus>
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          date?: string
+          slots?: Record<FeedingSlot, FeedingStatus>
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      feeding_history: {
+        Row: {
+          id: string
+          slot: FeedingSlot
+          caretaker: string
+          date: string
+          timestamp: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          slot: FeedingSlot
+          caretaker: string
+          date: string
+          timestamp: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          slot?: FeedingSlot
+          caretaker?: string
+          date?: string
+          timestamp?: string
+          created_at?: string
+        }
+      }
+    }
+  }
+}

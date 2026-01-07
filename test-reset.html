@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7 AM Reset Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-case { margin: 10px 0; padding: 10px; border: 1px solid #ccc; }
+        .pass { background-color: #d4edda; }
+        .fail { background-color: #f8d7da; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🕐 7 AM Automatic Reset Test</h1>
+    
+    <div id="results"></div>
+    
+    <button onclick="testResetLogic()">Test Reset Logic</button>
+    <button onclick="testCurrentTime()">Test Current Time</button>
+    <button onclick="simulateReset()">Simulate Reset</button>
+    
+    <script>
+        const todayId = () => new Date().toISOString().slice(0, 10);
+        const getResetHour = () => 7; // 7 AM reset time
+        
+        const shouldReset = (stateDate) => {
+            const today = new Date();
+            const currentHour = today.getHours();
+            
+            // Check if it's a different day
+            if (stateDate !== todayId()) {
+                // If it's a new day, check if we've passed the reset hour
+                return currentHour >= getResetHour();
+            }
+            
+            // Same day, no reset needed
+            return false;
+        };
+        
+        const testResetLogic = () => {
+            const results = document.getElementById('results');
+            results.innerHTML = '<h2>🧪 Reset Logic Test Results</h2>';
+            
+            const testCases = [
+                { hour: 6, stateDate: todayId(), expected: false, desc: '6 AM today - Before reset' },
+                { hour: 7, stateDate: todayId(), expected: false, desc: '7 AM today - Same day' },
+                { hour: 8, stateDate: todayId(), expected: false, desc: '8 AM today - Same day' },
+                { hour: 7, stateDate: '2026-01-06', expected: true, desc: '7 AM new day - At reset time' },
+                { hour: 8, stateDate: '2026-01-06', expected: true, desc: '8 AM new day - After reset' },
+                { hour: 23, stateDate: '2026-01-06', expected: true, desc: '11 PM new day - After reset' },
+                { hour: 6, stateDate: '2026-01-06', expected: false, desc: '6 AM new day - Before reset' },
+            ];
+            
+            testCases.forEach(test => {
+                // Mock the current hour
+                const originalGetHours = Date.prototype.getHours;
+                Date.prototype.getHours = () => test.hour;
+                
+                const result = shouldReset(test.stateDate);
+                const passed = result === test.expected;
+                
+                const div = document.createElement('div');
+                div.className = `test-case ${passed ? 'pass' : 'fail'}`;
+                div.innerHTML = `
+                    <strong>${test.desc}</strong><br>
+                    Hour: ${test.hour}, Date: ${test.stateDate}<br>
+                    Expected: ${test.expected ? 'RESET' : 'NO RESET'}<br>
+                    Actual: ${result ? 'RESET' : 'NO RESET'}<br>
+                    ${passed ? '✅ PASS' : '❌ FAIL'}
+                `;
+                results.appendChild(div);
+                
+                // Restore original method
+                Date.prototype.getHours = originalGetHours;
+            });
+        };
+        
+        const testCurrentTime = () => {
+            const results = document.getElementById('results');
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentDate = todayId();
+            const yesterday = '2026-01-06'; // Assuming today is 2026-01-07
+            
+            const shouldResetNow = shouldReset(yesterday);
+            
+            results.innerHTML = `
+                <h2>🕐 Current Time Test</h2>
+                <div class="test-case ${shouldResetNow ? 'pass' : 'fail'}">
+                    <strong>Current Status</strong><br>
+                    Current Hour: ${currentHour}<br>
+                    Today: ${currentDate}<br>
+                    Test Date (Yesterday): ${yesterday}<br>
+                    Should Reset: ${shouldResetNow ? '🔄 YES' : '⏸️ NO'}<br>
+                    ${shouldResetNow ? '✅ Reset condition met!' : '❌ Reset condition not met'}
+                </div>
+            `;
+        };
+        
+        const simulateReset = () => {
+            const results = document.getElementById('results');
+            
+            // Simulate yesterday's completed state
+            const yesterdayState = {
+                date: '2026-01-06',
+                slots: {
+                    morning: { done: true, caretaker: 'Test User', timestamp: new Date().toISOString() },
+                    evening: { done: true, caretaker: 'Test User', timestamp: new Date().toISOString() }
+                }
+            };
+            
+            results.innerHTML = `
+                <h2>🔄 Reset Simulation</h2>
+                <div class="test-case">
+                    <strong>Yesterday's State</strong><br>
+                    Date: ${yesterdayState.date}<br>
+                    Morning: ${yesterdayState.slots.morning.done ? '✅ Done' : '❌ Pending'} (${yesterdayState.slots.morning.caretaker})<br>
+                    Evening: ${yesterdayState.slots.evening.done ? '✅ Done' : '❌ Pending'} (${yesterdayState.slots.evening.caretaker})<br>
+                    <br>
+                    <strong>Reset Check at different times:</strong><br>
+                    6 AM: ${shouldReset(yesterdayState.date) ? '🔄 Would Reset' : '⏸️ No Reset'}<br>
+                    7 AM: ${shouldReset(yesterdayState.date) ? '🔄 Would Reset' : '⏸️ No Reset'}<br>
+                    8 AM: ${shouldReset(yesterdayState.date) ? '🔄 Would Reset' : '⏸️ No Reset'}<br>
+                </div>
+            `;
+        };
+        
+        // Auto-run current time test on load
+        window.onload = () => testCurrentTime();
+    </script>
+</body>
+</html>

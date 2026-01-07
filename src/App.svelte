@@ -11,11 +11,14 @@
     manualReset,
     removeHistoryRecord,
     saveState,
+    subscribeToStateChanges,
+    subscribeToHistoryChanges,
   } from './lib/storage';
   import { COPIES } from './lib/copy'
   import { CARETAKER_NAMES, type CaretakerName } from './lib/types'
   import type { FeedingRecord, FeedingSlot, FeedingState, Locale } from './lib/types'
 
+  let loading = true
   let state: FeedingState = blankState()
   let history: FeedingRecord[] = []
   let caretakers: Record<FeedingSlot, string> = {
@@ -34,9 +37,44 @@
   $: copy = COPIES[locale]
 
   onMount(() => {
-    const currentState = loadState()
-    state = currentState
+    // Load initial data
+    loadData()
     
+    // Set up real-time subscriptions
+    const stateSubscription = subscribeToStateChanges((newState) => {
+      state = newState
+      updateCaretakerStates(newState)
+    })
+    
+    const historySubscription = subscribeToHistoryChanges((newHistory) => {
+      history = newHistory
+    })
+    
+    // Cleanup subscriptions on unmount
+    return () => {
+      stateSubscription.unsubscribe()
+      historySubscription.unsubscribe()
+    }
+  });
+
+  const loadData = async () => {
+    try {
+      loading = true
+      const currentState = await loadState()
+      const currentHistory = await loadHistory()
+      
+      state = currentState
+      history = currentHistory
+      
+      updateCaretakerStates(currentState)
+    } catch (error) {
+      console.error('Error loading data:', error)
+    } finally {
+      loading = false
+    }
+  }
+
+  const updateCaretakerStates = (currentState: FeedingState) => {
     // Initialize caretaker states for each slot
     const slots: FeedingSlot[] = ['morning', 'evening']
     slots.forEach(slot => {
@@ -52,9 +90,7 @@
         customCaretakers[slot] = caretaker
       }
     })
-    
-    history = loadHistory();
-  });
+  }
 
   const updateCaretaker = (slot: FeedingSlot, value: string) => {
     caretakers = { ...caretakers, [slot]: value }
@@ -81,20 +117,20 @@
     locale = locale === 'es' ? 'en' : 'es'
   }
 
-  const handleManualReset = () => {
-    state = manualReset()
+  const handleManualReset = async () => {
+    state = await manualReset()
     caretakers = { morning: '', evening: '' }
     selectedCaretakers = { morning: 'other', evening: 'other' }
     customCaretakers = { morning: '', evening: '' }
     // Keep all history records - don't clear today's records on manual reset
   }
 
-  const toggleSlot = (slot: FeedingSlot) => {
+  const toggleSlot = async (slot: FeedingSlot) => {
     const current = state.slots[slot]
     if (!current.done) {
       const caretaker = (caretakers[slot] || '').trim() || copy.general.fallbackCaretaker
       const timestamp = new Date().toISOString()
-      state = {
+      const newState = {
         ...state,
         slots: {
           ...state.slots,
@@ -105,18 +141,19 @@
             timestamp,
           },
         },
-      };
-      history = addHistoryRecord(
-        {
-          slot,
-          caretaker,
-          date: state.date,
-          timestamp,
-        },
-        history,
-      );
+      }
+      state = newState
+      await saveState(newState)
+      
+      const record = {
+        slot,
+        caretaker,
+        date: state.date,
+        timestamp,
+      }
+      history = await addHistoryRecord(record, history)
     } else {
-      state = {
+      const newState = {
         ...state,
         slots: {
           ...state.slots,
@@ -125,13 +162,15 @@
             done: false,
           },
         },
-      };
-      caretakers = { ...caretakers, [slot]: '' };
-      selectedCaretakers = { ...selectedCaretakers, [slot]: 'other' };
-      customCaretakers = { ...customCaretakers, [slot]: '' };
-      history = removeHistoryRecord(slot, state.date, history);
+      }
+      state = newState
+      await saveState(newState)
+      
+      caretakers = { ...caretakers, [slot]: '' }
+      selectedCaretakers = { ...selectedCaretakers, [slot]: 'other' }
+      customCaretakers = { ...customCaretakers, [slot]: '' }
+      history = await removeHistoryRecord(slot, state.date, history)
     }
-    saveState(state);
   }
 </script>
 

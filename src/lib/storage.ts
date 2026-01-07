@@ -1,14 +1,11 @@
-import type { FeedingRecord, FeedingSlot, FeedingState, FeedingStatus } from './types'
+import { supabase } from './supabase'
+import type { FeedingRecord, FeedingSlot, FeedingState, FeedingStatus, Database } from './types'
 
-const STATE_KEY = 'cat-feeding-state'
-const HISTORY_KEY = 'cat-feeding-history'
 const HISTORY_LIMIT = 50
 
-const isBrowser = typeof window !== 'undefined' && typeof localStorage !== 'undefined'
+export const todayId = () => new Date().toISOString().slice(0, 10)
 
-const todayId = () => new Date().toISOString().slice(0, 10)
-
-const getResetHour = () => 8 // 8 AM reset time
+const getResetHour = () => 7 // 7 AM reset time
 
 const shouldReset = (stateDate: string): boolean => {
   const today = new Date()
@@ -35,91 +32,220 @@ export const blankState = (): FeedingState => ({
   slots: baseSlots(),
 })
 
-const safeParse = <T>(value: string | null, fallback: T): T => {
-  if (!value) return fallback
+// Load current feeding state from Supabase
+export const loadState = async (): Promise<FeedingState> => {
   try {
-    return JSON.parse(value) as T
-  } catch {
-    return fallback
-  }
-}
+    const today = todayId()
+    const { data, error } = await supabase
+      .from('feeding_states')
+      .select('*')
+      .eq('date', today)
+      .single()
 
-export const loadState = (): FeedingState => {
-  if (!isBrowser) return blankState()
-  const state = safeParse<FeedingState>(localStorage.getItem(STATE_KEY), blankState())
-  if (shouldReset(state.date)) {
-    // Before resetting, preserve today's records in history
-    preserveTodayRecords(state)
+    if (error && error.code !== 'PGRST116') { // PGRST116 is "not found"
+      console.error('Error loading state:', error)
+      return blankState()
+    }
+
+    if (!data) {
+      return blankState()
+    }
+
+    const state: FeedingState = {
+      date: data.date,
+      slots: {
+        morning: data.slots?.morning ?? { slot: 'morning', done: false },
+        evening: data.slots?.evening ?? { slot: 'evening', done: false },
+      },
+    }
+
+    // Check if we need to reset
+    if (shouldReset(state.date)) {
+      await preserveTodayRecords(state)
+      return blankState()
+    }
+
+    return state
+  } catch (error) {
+    console.error('Error loading state:', error)
     return blankState()
   }
-  return {
-    ...state,
-    slots: {
-      morning: state.slots?.morning ?? { slot: 'morning', done: false },
-      evening: state.slots?.evening ?? { slot: 'evening', done: false },
-    },
+}
+
+// Save feeding state to Supabase
+export const saveState = async (state: FeedingState): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('feeding_states')
+      .upsert({
+        date: state.date,
+        slots: state.slots,
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'date'
+      })
+
+    if (error) {
+      console.error('Error saving state:', error)
+    }
+  } catch (error) {
+    console.error('Error saving state:', error)
   }
 }
 
-const preserveTodayRecords = (state: FeedingState) => {
-  if (!isBrowser) return
-  
-  const history = loadHistory()
-  const today = todayId()
-  
-  // Add today's completed slots to history before reset
-  Object.entries(state.slots).forEach(([slot, status]) => {
-    if (status.done && status.caretaker && status.timestamp) {
-      const record: FeedingRecord = {
-        slot: slot as FeedingSlot,
-        caretaker: status.caretaker,
-        date: state.date,
-        timestamp: status.timestamp,
-      }
-      
-      // Only add if not already in history
-      const exists = history.some(h => 
-        h.slot === record.slot && h.date === record.date && h.timestamp === record.timestamp
-      )
-      
-      if (!exists) {
-        addHistoryRecord(record, history)
+// Load history from Supabase
+export const loadHistory = async (): Promise<FeedingRecord[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('feeding_history')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(HISTORY_LIMIT)
+
+    if (error) {
+      console.error('Error loading history:', error)
+      return []
+    }
+
+    return data.map(record => ({
+      slot: record.slot,
+      caretaker: record.caretaker,
+      date: record.date,
+      timestamp: record.timestamp,
+    }))
+  } catch (error) {
+    console.error('Error loading history:', error)
+    return []
+  }
+}
+
+// Add history record to Supabase
+export const addHistoryRecord = async (record: FeedingRecord, currentHistory: FeedingRecord[]): Promise<FeedingRecord[]> => {
+  try {
+    const { error } = await supabase
+      .from('feeding_history')
+      .insert({
+        slot: record.slot,
+        caretaker: record.caretaker,
+        date: record.date,
+        timestamp: record.timestamp,
+      })
+
+    if (error) {
+      console.error('Error adding history record:', error)
+    }
+
+    // Return updated history
+    return await loadHistory()
+  } catch (error) {
+    console.error('Error adding history record:', error)
+    return currentHistory
+  }
+}
+
+// Remove history record from Supabase
+export const removeHistoryRecord = async (slot: FeedingSlot, date: string, currentHistory: FeedingRecord[]): Promise<FeedingRecord[]> => {
+  try {
+    const { error } = await supabase
+      .from('feeding_history')
+      .delete()
+      .eq('slot', slot)
+      .eq('date', date)
+
+    if (error) {
+      console.error('Error removing history record:', error)
+    }
+
+    // Return updated history
+    return await loadHistory()
+  } catch (error) {
+    console.error('Error removing history record:', error)
+    return currentHistory
+  }
+}
+
+// Preserve today's records in history before reset
+const preserveTodayRecords = async (state: FeedingState): Promise<void> => {
+  try {
+    const today = todayId()
+    
+    // Add today's completed slots to history before reset
+    for (const [slot, status] of Object.entries(state.slots)) {
+      if (status.done && status.caretaker && status.timestamp) {
+        const record: FeedingRecord = {
+          slot: slot as FeedingSlot,
+          caretaker: status.caretaker,
+          date: state.date,
+          timestamp: status.timestamp,
+        }
+        
+        // Check if record already exists
+        const { data: existing } = await supabase
+          .from('feeding_history')
+          .select('*')
+          .eq('slot', record.slot)
+          .eq('date', record.date)
+          .eq('timestamp', record.timestamp)
+          .single()
+
+        if (!existing) {
+          await addHistoryRecord(record, [])
+        }
       }
     }
-  })
+  } catch (error) {
+    console.error('Error preserving today records:', error)
+  }
 }
 
-export const saveState = (state: FeedingState) => {
-  if (!isBrowser) return
-  localStorage.setItem(STATE_KEY, JSON.stringify(state))
-}
-
-export const loadHistory = (): FeedingRecord[] => {
-  if (!isBrowser) return []
-  return safeParse<FeedingRecord[]>(localStorage.getItem(HISTORY_KEY), [])
-}
-
-const persistHistory = (records: FeedingRecord[]) => {
-  if (!isBrowser) return
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(records.slice(0, HISTORY_LIMIT)))
-}
-
-export const addHistoryRecord = (record: FeedingRecord, records: FeedingRecord[]) => {
-  const next = [record, ...records].slice(0, HISTORY_LIMIT)
-  persistHistory(next)
-  return next
-}
-
-export const removeHistoryRecord = (slot: FeedingSlot, date: string, records: FeedingRecord[]) => {
-  const index = records.findIndex((entry) => entry.slot === slot && entry.date === date)
-  if (index === -1) return records
-  const next = [...records.slice(0, index), ...records.slice(index + 1)]
-  persistHistory(next)
-  return next
-}
-
-export const manualReset = (): FeedingState => {
+// Manual reset function
+export const manualReset = async (): Promise<FeedingState> => {
   const newState = blankState()
-  saveState(newState)
+  await saveState(newState)
   return newState
+}
+
+// Real-time subscription helpers
+export const subscribeToStateChanges = (callback: (state: FeedingState) => void) => {
+  const today = todayId()
+  
+  return supabase
+    .channel('feeding_state_changes')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'feeding_states',
+        filter: `date=eq.${today}`,
+      },
+      async (payload) => {
+        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+          const newState = payload.new as any
+          callback({
+            date: newState.date,
+            slots: newState.slots,
+          })
+        }
+      }
+    )
+    .subscribe()
+}
+
+export const subscribeToHistoryChanges = (callback: (history: FeedingRecord[]) => void) => {
+  return supabase
+    .channel('feeding_history_changes')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'feeding_history',
+      },
+      async () => {
+        const updatedHistory = await loadHistory()
+        callback(updatedHistory)
+      }
+    )
+    .subscribe()
 }
