@@ -102,6 +102,14 @@
     min-height: 260px;
   }
 
+  @media (max-width: 768px) {
+    .card {
+      padding: 1.25rem;
+      min-height: 240px;
+      gap: 0.75rem;
+    }
+  }
+
   .card:hover {
     transform: translateY(-2px);
     border-color: rgba(255, 255, 255, 0.3);
@@ -132,16 +140,36 @@
     gap: 0.5rem;
   }
 
+  @media (max-width: 768px) {
+    header {
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+  }
+
   h2 {
     margin: 0;
     font-size: 1.35rem;
   }
 
+  @media (max-width: 768px) {
+    h2 {
+      font-size: 1.25rem;
+    }
+  }
+
   .badge {
     border-radius: 999px;
-    padding: 0.2rem 0.9rem;
+    padding: 0.3rem 1rem;
     font-size: 0.85rem;
     font-weight: 600;
+  }
+
+  @media (max-width: 768px) {
+    .badge {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.8rem;
+    }
   }
 
   .badge--pending {
@@ -168,15 +196,22 @@
   label {
     display: flex;
     flex-direction: column;
-    gap: 0.35rem;
+    gap: 0.4rem;
     font-size: 0.9rem;
+  }
+
+  @media (max-width: 768px) {
+    label {
+      gap: 0.5rem;
+      font-size: 0.95rem;
+    }
   }
 
   input,
   select {
     border-radius: 0.9rem;
     border: 2px solid rgba(203, 216, 59, 0.2);
-    padding: 0.65rem 0.9rem;
+    padding: 0.75rem 1rem;
     font-size: 1rem;
     font-family: inherit;
     background: var(--color-ivory);
@@ -184,6 +219,16 @@
     transition:
       border-color 150ms ease,
       box-shadow 150ms ease;
+    min-height: 44px;
+  }
+
+  @media (max-width: 768px) {
+    input,
+    select {
+      padding: 0.875rem 1rem;
+      font-size: 16px;
+      min-height: 48px;
+    }
   }
 
   input:focus,
@@ -207,10 +252,20 @@
   button {
     border: none;
     border-radius: 999px;
-    padding: 0.9rem 1.25rem;
+    padding: 1rem 1.5rem;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
+    min-height: 48px;
+    min-width: 48px;
+  }
+
+  @media (max-width: 768px) {
+    button {
+      padding: 1rem 1.25rem;
+      font-size: 1rem;
+      min-height: 52px;
+    }
   }
 
   .primary {
