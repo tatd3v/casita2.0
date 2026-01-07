@@ -196,6 +196,10 @@
   </section>
 
   <section class="dashboard">
+    <div class="mobile-order">
+      <HistoryList {history} copy={copy.history} {locale} {state} />
+    </div>
+    
     <div class="cards">
       <FeedingCard
         status={state.slots.morning}
@@ -218,7 +222,5 @@
         copy={copy.card}
       />
     </div>
-
-    <HistoryList {history} copy={copy.history} />
   </section>
 </main>
