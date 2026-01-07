@@ -18,6 +18,15 @@
   export let onToggle: () => void;
   export let copy: FeedingCardCopy;
 
+  let isExpanded = true;
+
+  // Auto-collapse when status changes to done
+  $: if (status.done && window.innerWidth <= 768) {
+    isExpanded = false;
+  } else if (!status.done) {
+    isExpanded = true;
+  }
+
   const handleSelectChange = (event: Event) => {
     const value = (event.currentTarget as HTMLSelectElement).value as
       | CaretakerName
@@ -29,62 +38,78 @@
     const value = (event.currentTarget as HTMLInputElement).value;
     onCustomCaretakerChange(value);
   };
+
+  const toggleExpanded = () => {
+    // Only allow toggling on mobile screens
+    if (window.innerWidth <= 768) {
+      isExpanded = !isExpanded;
+    }
+  };
 </script>
 
-<article class={`card ${status.done ? 'card--done' : 'card--pending'}`}>
-  <header>
+<article class={`card ${status.done ? 'card--done' : 'card--pending'} ${!isExpanded ? 'card--collapsed' : ''}`}>
+  <header class="card-header" on:click={toggleExpanded}>
     <h2>{copy.slotLabels[status.slot]}</h2>
     <span class={`badge ${status.done ? 'badge--done' : 'badge--pending'}`}>
       {status.done ? copy.badge.done : copy.badge.pending}
     </span>
+    <div class="expand-icon {isExpanded ? 'expanded' : ''}">
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+        <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/>
+      </svg>
+    </div>
   </header>
 
-  <p class="card__description">
-    {status.done
-      ? copy.description.done(status.caretaker ?? copy.description.fallbackName)
-      : copy.description.pending}
-  </p>
+  {#if isExpanded}
+    <div class="card-content {isExpanded ? 'show' : ''}">
+      <p class="card__description">
+        {status.done
+          ? copy.description.done(status.caretaker ?? copy.description.fallbackName)
+          : copy.description.pending}
+      </p>
 
-  {#if status.timestamp}
-    <p class="card__timestamp">
-      {new Date(status.timestamp).toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      })}
-    </p>
+      {#if status.timestamp}
+        <p class="card__timestamp">
+          {new Date(status.timestamp).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+          })}
+        </p>
+      {/if}
+
+      <label>
+        <span>{copy.caretakerLabel}</span>
+        <select
+          value={selectedCaretaker}
+          on:change={handleSelectChange}
+          aria-label={copy.ariaLabel(copy.slotLabels[status.slot])}
+          disabled={status.done}
+        >
+          <option value="other">{copy.otherOption}</option>
+          {#each CARETAKER_NAMES as name}
+            <option value={name}>{name}</option>
+          {/each}
+        </select>
+      </label>
+
+      {#if selectedCaretaker === 'other'}
+        <label>
+          <span>{copy.placeholder}</span>
+          <input
+            type="text"
+            placeholder={copy.placeholder}
+            value={customCaretaker}
+            on:input={handleInputChange}
+            disabled={status.done}
+          />
+        </label>
+      {/if}
+
+      <button class="primary" on:click={onToggle}>
+        {status.done ? copy.button.done : copy.button.pending}
+      </button>
+    </div>
   {/if}
-
-  <label>
-    <span>{copy.caretakerLabel}</span>
-    <select
-      value={selectedCaretaker}
-      on:change={handleSelectChange}
-      aria-label={copy.ariaLabel(copy.slotLabels[status.slot])}
-      disabled={status.done}
-    >
-      <option value="other">{copy.otherOption}</option>
-      {#each CARETAKER_NAMES as name}
-        <option value={name}>{name}</option>
-      {/each}
-    </select>
-  </label>
-
-  {#if selectedCaretaker === 'other'}
-    <label>
-      <span>{copy.placeholder}</span>
-      <input
-        type="text"
-        placeholder={copy.placeholder}
-        value={customCaretaker}
-        on:input={handleInputChange}
-        disabled={status.done}
-      />
-    </label>
-  {/if}
-
-  <button class="primary" on:click={onToggle}>
-    {status.done ? copy.button.done : copy.button.pending}
-  </button>
 </article>
 
 <style>
@@ -140,6 +165,76 @@
     gap: 0.5rem;
   }
 
+  .card-header {
+    transition: background-color 150ms ease;
+  }
+
+  @media (max-width: 768px) {
+    .card-header {
+      cursor: pointer;
+      user-select: none;
+    }
+    
+    .card-header:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+      border-radius: 0.5rem;
+      margin: -0.25rem;
+      padding: 0.25rem;
+    }
+    
+    .expand-icon {
+      display: block;
+    }
+    
+    .card-content {
+      display: none;
+    }
+    
+    .card-content.show {
+      display: flex;
+    }
+    
+    .card--collapsed {
+      padding: 0.75rem 1rem;
+      gap: 0;
+      min-height: auto;
+    }
+    
+    .card--collapsed .card-header {
+      margin: 0;
+      padding: 0;
+    }
+  }
+
+  .expand-icon {
+    transition: transform 200ms ease;
+    color: var(--color-slate-light);
+    opacity: 0.7;
+    display: none;
+  }
+
+  .expand-icon.expanded {
+    transform: rotate(180deg);
+  }
+
+  .card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    animation: slideDown 200ms ease-out;
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
   @media (max-width: 768px) {
     header {
       flex-wrap: wrap;
@@ -167,8 +262,17 @@
 
   @media (max-width: 768px) {
     .badge {
-      padding: 0.4rem 0.8rem;
-      font-size: 0.8rem;
+      padding: 0.25rem 0.6rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .badge {
+      padding: 0.2rem 0.5rem;
+      font-size: 0.7rem;
+      font-weight: 500;
     }
   }
 
