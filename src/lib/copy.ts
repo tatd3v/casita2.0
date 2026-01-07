@@ -38,8 +38,7 @@ export const COPIES: Record<Locale, AppCopy> = {
       },
     },
     history: {
-      title: 'Historial rápido',
-      subtitleWithRecords: 'Últimas acciones',
+      title: 'Historial',
       subtitleEmpty: 'Aún no hay registros hoy',
       emptyMessage: 'Cuando alguien marque un turno, se verá aquí.',
       slotLabels: {
@@ -85,8 +84,7 @@ export const COPIES: Record<Locale, AppCopy> = {
       },
     },
     history: {
-      title: 'Quick history',
-      subtitleWithRecords: 'Latest actions',
+      title: 'History',
       subtitleEmpty: 'No records for today yet',
       emptyMessage: 'Once someone marks a slot, you will see it here.',
       slotLabels: {
