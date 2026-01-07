@@ -38,7 +38,37 @@
   let showResetModal = false
   $: copy = COPIES[locale]
 
+  // Load saved language preference from localStorage
+  const loadSavedLanguage = (): Locale => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('casita-language')
+      if (saved === 'es' || saved === 'en') {
+        return saved as Locale
+      }
+      
+      // Auto-detect from browser language if no saved preference
+      const browserLang = navigator.language || navigator.languages?.[0]
+      if (browserLang?.startsWith('en')) {
+        return 'en'
+      }
+      if (browserLang?.startsWith('es')) {
+        return 'es'
+      }
+    }
+    return 'es' // Default to Spanish
+  }
+
+  // Save language preference to localStorage
+  const saveLanguage = (lang: Locale) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('casita-language', lang)
+    }
+  }
+
   onMount(() => {
+    // Load saved language preference
+    locale = loadSavedLanguage()
+    
     // Load initial data
     loadData()
     
@@ -117,6 +147,7 @@
 
   const toggleLocale = () => {
     locale = locale === 'es' ? 'en' : 'es'
+    saveLanguage(locale)
   }
 
   const handleManualReset = async () => {
@@ -185,54 +216,60 @@
 </script>
 
 <main class="shell">
-  <section class="hero">
-    <div class="hero__top">
-      <p class="eyebrow">{copy.hero.eyebrow}</p>
-      <div class="hero__actions">
-        <button class="reset-button" on:click={handleManualReset} aria-label={copy.general.resetButton}>
-          {copy.general.resetButton}
-        </button>
-        <button class="language" on:click={toggleLocale} aria-label={copy.general.toggleLabel}>
-          {copy.general.toggleLabel}
-        </button>
+  {#if loading}
+    <div class="loading-container">
+      <div class="loader {locale}"></div>
+    </div>
+  {:else}
+    <section class="hero">
+      <div class="hero__top">
+        <p class="eyebrow">{copy.hero.eyebrow}</p>
+        <div class="hero__actions">
+          <button class="reset-button" on:click={handleManualReset} aria-label={copy.general.resetButton}>
+            {copy.general.resetButton}
+          </button>
+          <button class="language" on:click={toggleLocale} aria-label={copy.general.toggleLabel}>
+            {copy.general.toggleLabel}
+          </button>
+        </div>
       </div>
-    </div>
-    <div class="hero__title">
-      <img src={catsIcon} alt="Cats" class="hero__icon" />
-      <h1>{copy.hero.title}</h1>
-      <img src={catsIcon} alt="Cats" class="hero__icon" />
-    </div>
-    <p class="lead">{copy.hero.lead}</p>
-  </section>
+      <div class="hero__title">
+        <img src={catsIcon} alt="Cats" class="hero__icon" />
+        <h1>{copy.hero.title}</h1>
+        <img src={catsIcon} alt="Cats" class="hero__icon" />
+      </div>
+      <p class="lead">{copy.hero.lead}</p>
+    </section>
 
-  <section class="dashboard">
-    <div class="mobile-order">
-      <HistoryList {history} copy={copy.history} {locale} {state} />
-    </div>
-    
-    <div class="cards">
-      <FeedingCard
-        status={state.slots.morning}
-        caretaker={caretakers.morning}
-        selectedCaretaker={selectedCaretakers.morning}
-        customCaretaker={customCaretakers.morning}
-        onSelectedCaretakerChange={(value) => updateSelectedCaretaker('morning', value)}
-        onCustomCaretakerChange={(value) => updateCustomCaretaker('morning', value)}
-        onToggle={() => toggleSlot('morning')}
-        copy={copy.card}
-      />
-      <FeedingCard
-        status={state.slots.evening}
-        caretaker={caretakers.evening}
-        selectedCaretaker={selectedCaretakers.evening}
-        customCaretaker={customCaretakers.evening}
-        onSelectedCaretakerChange={(value) => updateSelectedCaretaker('evening', value)}
-        onCustomCaretakerChange={(value) => updateCustomCaretaker('evening', value)}
-        onToggle={() => toggleSlot('evening')}
-        copy={copy.card}
-      />
-    </div>
-  </section>
+    <section class="dashboard">
+      <div class="mobile-order">
+        <HistoryList {history} copy={copy.history} {locale} {state} />
+      </div>
+      
+      <div class="cards">
+        <FeedingCard
+          status={state.slots.morning}
+          caretaker={caretakers.morning}
+          selectedCaretaker={selectedCaretakers.morning}
+          customCaretaker={customCaretakers.morning}
+          onSelectedCaretakerChange={(value) => updateSelectedCaretaker('morning', value)}
+          onCustomCaretakerChange={(value) => updateCustomCaretaker('morning', value)}
+          onToggle={() => toggleSlot('morning')}
+          copy={copy.card}
+        />
+        <FeedingCard
+          status={state.slots.evening}
+          caretaker={caretakers.evening}
+          selectedCaretaker={selectedCaretakers.evening}
+          customCaretaker={customCaretakers.evening}
+          onSelectedCaretakerChange={(value) => updateSelectedCaretaker('evening', value)}
+          onCustomCaretakerChange={(value) => updateCustomCaretaker('evening', value)}
+          onToggle={() => toggleSlot('evening')}
+          copy={copy.card}
+        />
+      </div>
+    </section>
+  {/if}
 </main>
 
 <ConfirmModal
