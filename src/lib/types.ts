@@ -67,6 +67,10 @@ export interface AppCopy {
     languageName: string
     toggleLabel: string
     resetButton: string
+    resetModalTitle: string
+    resetModalMessage: string
+    resetModalConfirm: string
+    resetModalCancel: string
   }
   card: FeedingCardCopy
   history: HistoryCopy
