@@ -75,11 +75,14 @@ export const loadState = async (): Promise<FeedingState> => {
 // Save feeding state to Supabase
 export const saveState = async (state: FeedingState): Promise<void> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser()
+    
     const { error } = await supabase
       .from('feeding_states')
       .upsert({
         date: state.date,
         slots: state.slots,
+        user_id: user?.id,
         updated_at: new Date().toISOString(),
       }, {
         onConflict: 'date'
@@ -100,7 +103,6 @@ export const loadHistory = async (): Promise<FeedingRecord[]> => {
       .from('feeding_history')
       .select('*')
       .order('created_at', { ascending: false })
-      .limit(HISTORY_LIMIT)
 
     if (error) {
       console.error('Error loading history:', error)
@@ -122,6 +124,8 @@ export const loadHistory = async (): Promise<FeedingRecord[]> => {
 // Add history record to Supabase
 export const addHistoryRecord = async (record: FeedingRecord, currentHistory: FeedingRecord[]): Promise<FeedingRecord[]> => {
   try {
+    const { data: { user } } = await supabase.auth.getUser()
+    
     const { error } = await supabase
       .from('feeding_history')
       .insert({
@@ -129,6 +133,7 @@ export const addHistoryRecord = async (record: FeedingRecord, currentHistory: Fe
         caretaker: record.caretaker,
         date: record.date,
         timestamp: record.timestamp,
+        user_id: user?.id,
       })
 
     if (error) {
@@ -248,4 +253,21 @@ export const subscribeToHistoryChanges = (callback: (history: FeedingRecord[]) =
       }
     )
     .subscribe()
+}
+
+// Check user's rate limit status
+export const getRateLimitStatus = async () => {
+  try {
+    const { data, error } = await supabase.rpc('get_user_rate_limit_status')
+    
+    if (error) {
+      console.error('Error checking rate limit:', error)
+      return null
+    }
+    
+    return data
+  } catch (error) {
+    console.error('Error checking rate limit:', error)
+    return null
+  }
 }

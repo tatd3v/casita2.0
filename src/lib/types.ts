@@ -51,7 +51,6 @@ export interface FeedingCardCopy {
 
 export interface HistoryCopy {
   title: string
-  subtitleWithRecords: string
   subtitleEmpty: string
   emptyMessage: string
   slotLabels: Record<FeedingSlot, string>
