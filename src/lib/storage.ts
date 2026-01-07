@@ -148,17 +148,37 @@ export const addHistoryRecord = async (record: FeedingRecord, currentHistory: Fe
   }
 }
 
-// Remove history record from Supabase
+// Remove history record from Supabase (only the most recent one for the slot)
 export const removeHistoryRecord = async (slot: FeedingSlot, date: string, currentHistory: FeedingRecord[]): Promise<FeedingRecord[]> => {
   try {
-    const { error } = await supabase
+    // Find the most recent record for this slot and date
+    const { data: records, error: fetchError } = await supabase
       .from('feeding_history')
-      .delete()
+      .select('*')
       .eq('slot', slot)
       .eq('date', date)
+      .order('timestamp', { ascending: false })
+      .limit(1)
 
-    if (error) {
-      console.error('Error removing history record:', error)
+    if (fetchError) {
+      console.error('Error fetching history record:', fetchError)
+      return currentHistory
+    }
+
+    if (records && records.length > 0) {
+      const mostRecentRecord = records[0]
+      
+      // Delete only the most recent record
+      const { error: deleteError } = await supabase
+        .from('feeding_history')
+        .delete()
+        .eq('slot', slot)
+        .eq('date', date)
+        .eq('timestamp', mostRecentRecord.timestamp)
+
+      if (deleteError) {
+        console.error('Error removing history record:', deleteError)
+      }
     }
 
     // Return updated history
