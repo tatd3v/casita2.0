@@ -358,3 +358,48 @@ body {
 .bg-pear { background: var(--color-pear); }
 .bg-indigo { background: var(--color-indigo); }
 .bg-ivory { background: var(--color-ivory); }
+
+/* Loading animation */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: radial-gradient(circle at top, rgba(203, 216, 59, 0.15), transparent 45%),
+    radial-gradient(circle at bottom, rgba(168, 138, 237, 0.15), transparent 45%),
+    linear-gradient(180deg, var(--color-ivory), var(--color-ivory-dark));
+}
+
+.loader {
+  width: fit-content;
+  font-weight: bold;
+  font-family: monospace;
+  color: var(--color-slate-dark);
+  text-shadow: 
+    0 0 0 var(--color-pear), 
+    0 0 0 var(--color-indigo), 
+    0 0 0 var(--color-slate-light);
+  font-size: 30px;
+  animation: l32 1s infinite cubic-bezier(0.5,-2000,0.5,2000);
+}
+
+.loader.es:before {
+  content:"Cargando...";
+}
+
+.loader.en:before {
+  content:"Loading...";
+}
+
+@keyframes l32{
+  25%,100% {
+    text-shadow: 
+      0.03px -0.01px 0.01px var(--color-pear), 
+      0.02px  0.02px 0     var(--color-indigo), 
+     -0.02px  0.02px 0     var(--color-slate-light);
+  }
+}

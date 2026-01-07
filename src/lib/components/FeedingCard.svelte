@@ -131,7 +131,7 @@
         </label>
       {/if}
 
-      <button class="primary" on:click={onToggle} disabled={status.done || isTimeDisabled}>
+      <button class="primary" on:click={onToggle} disabled={isTimeDisabled}>
         {status.done ? copy.button.done : copy.button.pending}
       </button>
     </div>
@@ -428,8 +428,6 @@
   .card--disabled {
     opacity: 0.6;
     pointer-events: none;
-    min-height: auto;
-    padding: 0.5rem;
   }
 
   .badge--disabled {
