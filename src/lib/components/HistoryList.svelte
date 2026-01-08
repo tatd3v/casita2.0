@@ -347,29 +347,26 @@
     margin: 0;
     padding: 0;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    justify-content: space-evenly;
     gap: 0.75rem;
   }
 
   @media (max-width: 768px) {
     ul {
+      flex-direction: row;
+      justify-content: space-evenly;
       gap: 0.6rem;
     }
   }
 
   li {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     padding-bottom: 0.65rem;
     border-bottom: 1px solid rgba(203, 216, 59, 0.1);
   }
 
   @media (max-width: 768px) {
     li {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.25rem;
       padding-bottom: 0.75rem;
     }
   }
@@ -501,6 +498,9 @@
     list-style: none;
     padding: 0;
     margin: 0;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
     transition: all 200ms ease;
     overflow: hidden;
   }
