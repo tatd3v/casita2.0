@@ -165,9 +165,9 @@
 
   {#if history.length}
     <div class="history-groups" class:collapsed={historyCollapsed}>
-      {#each Object.entries(sortedGroupedHistory) as [dateString, records] (dateString)}
-        <!-- Always show today, even when history is collapsed -->
-        {#if !historyCollapsed || isToday(dateString)}
+      {#each Object.entries(sortedGroupedHistory) as [dateString, records], index (dateString)}
+        <!-- Show first day group when collapsed, all when expanded -->
+        {#if !historyCollapsed || index === 0}
           <div class="day-group">
             <div class="day-header" class:clickable={isCollapsible(dateString)} on:click={() => isCollapsible(dateString) && toggleDate(dateString)}>
               <h4>{new Date(dateString).toLocaleDateString(localeOptions[locale], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}</h4>
@@ -195,7 +195,6 @@
               </ul>
             {/if}
           </div>
-        {/if}
       {/each}
     </div>
   {:else}
@@ -296,32 +295,27 @@
     transition: max-height 300ms ease;
   }
 
-  /* Override collapsed state for today's content */
-  .history.collapsed .history-groups.collapsed {
+  /* When collapsed, hide all day groups except first */
+  section.history.collapsed .history-groups {
+    display: flex !important;
+  }
+
+  section.history.collapsed .day-group {
+    display: none !important;
+  }
+
+  section.history.collapsed .day-group:first-child {
+    display: block !important;
+    overflow: visible !important;
+    max-height: none !important;
+  }
+
+  section.history.collapsed .day-group:first-child ul {
+    display: flex !important;
+    flex-direction: column !important;
+    opacity: 1 !important;
     max-height: none !important;
     overflow: visible !important;
-  }
-
-  /* Allow today's group to be fully visible when collapsed */
-  .history.collapsed .day-group:first-child {
-    overflow: visible;
-    max-height: none;
-    padding: 1rem;
-    margin: 0;
-  }
-
-  .history.collapsed .day-group:first-child .day-header {
-    margin-bottom: 0.5rem;
-    padding-bottom: 0.5rem;
-  }
-
-  .history.collapsed .day-group:first-child ul {
-    overflow: visible;
-    max-height: none;
-  }
-
-  .history.collapsed .day-group:not(:first-child) {
-    display: none;
   }
 
   h3 {
