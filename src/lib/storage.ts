@@ -1,56 +1,62 @@
-import { supabase } from './supabase'
-import type { FeedingRecord, FeedingSlot, FeedingState, FeedingStatus, Database } from './types'
+import { supabase } from './supabase';
+import type {
+  FeedingRecord,
+  FeedingSlot,
+  FeedingState,
+  FeedingStatus,
+  Database,
+} from './types';
 
-const HISTORY_LIMIT = 50
+const HISTORY_LIMIT = 50;
 
-export const todayId = () => new Date().toISOString().slice(0, 10)
+export const todayId = () => new Date().toISOString().slice(0, 10);
 
-const getResetHour = () => 7 // 7 AM reset time
+const getResetHour = () => 7; // 7 AM reset time
 
 const shouldReset = (stateDate: string): boolean => {
-  const today = new Date()
-  const storedDate = new Date(stateDate)
-  
+  const today = new Date();
+  const storedDate = new Date(stateDate);
+
   // Check if it's a different day
   if (stateDate !== todayId()) {
     // If it's a new day, check if we've passed the reset hour
-    const currentHour = today.getHours()
-    return currentHour >= getResetHour()
+    const currentHour = today.getHours();
+    return currentHour >= getResetHour();
   }
-  
+
   // Same day, no reset needed
-  return false
-}
+  return false;
+};
 
 const baseSlots = (): Record<FeedingSlot, FeedingStatus> => ({
   morning: { slot: 'morning', done: false },
   evening: { slot: 'evening', done: false },
-})
+});
 
 export const blankState = (): FeedingState => ({
   date: todayId(),
   slots: baseSlots(),
-})
+});
 
 // Load current feeding state from Supabase
 export const loadState = async (): Promise<FeedingState> => {
   try {
-    const today = todayId()
-    console.log('Loading state for date:', today)
-    
+    const today = todayId();
+    console.log('Loading state for date:', today);
+
     const { data, error } = await supabase
       .from('feeding_states')
       .select('*')
       .eq('date', today)
-      .maybeSingle()
+      .maybeSingle();
 
     if (error) {
-      console.error('Error loading state:', error)
-      return blankState()
+      console.error('Error loading state:', error);
+      return blankState();
     }
 
     if (!data) {
-      return blankState()
+      return blankState();
     }
 
     const state: FeedingState = {
@@ -59,47 +65,47 @@ export const loadState = async (): Promise<FeedingState> => {
         morning: data.slots?.morning ?? { slot: 'morning', done: false },
         evening: data.slots?.evening ?? { slot: 'evening', done: false },
       },
-    }
+    };
 
     // Check if we need to reset
     if (shouldReset(state.date)) {
-      await preserveTodayRecords(state)
-      return blankState()
+      await preserveTodayRecords(state);
+      return blankState();
     }
 
-    return state
+    return state;
   } catch (error) {
-    console.error('Error loading state:', error)
-    return blankState()
+    console.error('Error loading state:', error);
+    return blankState();
   }
-}
+};
 
 // Save feeding state to Supabase
 export const saveState = async (state: FeedingState): Promise<void> => {
   try {
-    console.log('Saving state:', state)
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    const { error } = await supabase
-      .from('feeding_states')
-      .upsert({
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const { error } = await supabase.from('feeding_states').upsert(
+      {
         date: state.date,
         slots: state.slots,
         user_id: user?.id,
         updated_at: new Date().toISOString(),
-      }, {
-        onConflict: 'date'
-      })
+      },
+      {
+        onConflict: 'date',
+      },
+    );
 
     if (error) {
-      console.error('Error saving state:', error)
-    } else {
-      console.log('State saved successfully')
+      console.error('Error saving state:', error);
     }
   } catch (error) {
-    console.error('Error saving state:', error)
+    console.error('Error saving state:', error);
   }
-}
+};
 
 // Load history from Supabase
 export const loadHistory = async (): Promise<FeedingRecord[]> => {
@@ -107,106 +113,112 @@ export const loadHistory = async (): Promise<FeedingRecord[]> => {
     const { data, error } = await supabase
       .from('feeding_history')
       .select('*')
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error loading history:', error)
-      return []
+      console.error('Error loading history:', error);
+      return [];
     }
 
-    return data.map(record => ({
+    return data.map((record) => ({
       slot: record.slot,
       caretaker: record.caretaker,
       date: record.date,
       timestamp: record.timestamp,
-    }))
+    }));
   } catch (error) {
-    console.error('Error loading history:', error)
-    return []
+    console.error('Error loading history:', error);
+    return [];
   }
-}
+};
 
 // Add history record to Supabase
-export const addHistoryRecord = async (record: FeedingRecord, currentHistory: FeedingRecord[]): Promise<FeedingRecord[]> => {
+export const addHistoryRecord = async (
+  record: FeedingRecord,
+  currentHistory: FeedingRecord[],
+): Promise<FeedingRecord[]> => {
   try {
-    const { data: { user } } = await supabase.auth.getUser()
-    
-    const { error } = await supabase
-      .from('feeding_history')
-      .insert({
-        slot: record.slot,
-        caretaker: record.caretaker,
-        date: record.date,
-        timestamp: record.timestamp,
-        user_id: user?.id,
-      })
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const { error } = await supabase.from('feeding_history').insert({
+      slot: record.slot,
+      caretaker: record.caretaker,
+      date: record.date,
+      timestamp: record.timestamp,
+      user_id: user?.id,
+    });
 
     if (error) {
-      console.error('Error adding history record:', error)
+      console.error('Error adding history record:', error);
     }
 
     // Return updated history
-    return await loadHistory()
+    return await loadHistory();
   } catch (error) {
-    console.error('Error adding history record:', error)
-    return currentHistory
+    console.error('Error adding history record:', error);
+    return currentHistory;
   }
-}
+};
 
 // Remove history record from Supabase (only the most recent one for the slot)
-export const removeHistoryRecord = async (slot: FeedingSlot, date: string, currentHistory: FeedingRecord[]): Promise<FeedingRecord[]> => {
+export const removeHistoryRecord = async (
+  slot: FeedingSlot,
+  date: string,
+  currentHistory: FeedingRecord[],
+): Promise<FeedingRecord[]> => {
   try {
-    console.log('Removing history record:', { slot, date })
-    
-    // Use overlap operator with proper array casting for PostgreSQL text[] column
-    const { data: records, error: fetchError } = await supabase
+    // Fetch all records for the date and filter in JavaScript
+    const { data: allRecords, error: fetchError } = await supabase
       .from('feeding_history')
       .select('*')
-      .filter('slot', 'ov', `{${slot}}`)
       .eq('date', date)
-      .order('timestamp', { ascending: false })
-      .limit(1)
+      .order('timestamp', { ascending: false });
 
     if (fetchError) {
-      console.error('Error fetching history record:', fetchError)
-      return currentHistory
+      console.error('Error fetching history records:', fetchError);
+      return currentHistory;
     }
 
-    console.log('Found records to delete:', records)
+    // Filter records that contain the slot in their array
+    const matchingRecords =
+      allRecords?.filter((record) => {
+        // The slot field is an array, check if it contains our slot
+        if (Array.isArray(record.slot)) {
+          return record.slot.includes(slot);
+        }
+        // Fallback: check if slot equals the value directly (in case it's not an array)
+        return record.slot === slot;
+      }) || [];
 
-    if (records && records.length > 0) {
-      const mostRecentRecord = records[0]
-      
-      console.log('Deleting record with timestamp:', mostRecentRecord.timestamp)
-      
+    if (matchingRecords.length > 0) {
+      const mostRecentRecord = matchingRecords[0];
+
       // Delete by timestamp (unique identifier)
       const { error: deleteError } = await supabase
         .from('feeding_history')
         .delete()
-        .eq('timestamp', mostRecentRecord.timestamp)
+        .eq('timestamp', mostRecentRecord.timestamp);
 
       if (deleteError) {
-        console.error('Error removing history record:', deleteError)
-      } else {
-        console.log('Successfully deleted record')
+        console.error('Error removing history record:', deleteError);
       }
-    } else {
-      console.log('No records found to delete')
     }
 
     // Return updated history
-    return await loadHistory()
+    return await loadHistory();
   } catch (error) {
-    console.error('Error removing history record:', error)
-    return currentHistory
+    console.error('Error removing history record:', error);
+    return currentHistory;
   }
-}
+};
 
 // Preserve today's records in history before reset
 const preserveTodayRecords = async (state: FeedingState): Promise<void> => {
   try {
-    const today = todayId()
-    
+    const today = todayId();
+
     // Add today's completed slots to history before reset
     for (const [slot, status] of Object.entries(state.slots)) {
       if (status.done && status.caretaker && status.timestamp) {
@@ -215,8 +227,8 @@ const preserveTodayRecords = async (state: FeedingState): Promise<void> => {
           caretaker: status.caretaker,
           date: state.date,
           timestamp: status.timestamp,
-        }
-        
+        };
+
         // Check if record already exists
         const { data: existing } = await supabase
           .from('feeding_history')
@@ -224,29 +236,31 @@ const preserveTodayRecords = async (state: FeedingState): Promise<void> => {
           .eq('slot', record.slot)
           .eq('date', record.date)
           .eq('timestamp', record.timestamp)
-          .single()
+          .single();
 
         if (!existing) {
-          await addHistoryRecord(record, [])
+          await addHistoryRecord(record, []);
         }
       }
     }
   } catch (error) {
-    console.error('Error preserving today records:', error)
+    console.error('Error preserving today records:', error);
   }
-}
+};
 
 // Manual reset function
 export const manualReset = async (): Promise<FeedingState> => {
-  const newState = blankState()
-  await saveState(newState)
-  return newState
-}
+  const newState = blankState();
+  await saveState(newState);
+  return newState;
+};
 
 // Real-time subscription helpers
-export const subscribeToStateChanges = (callback: (state: FeedingState) => void) => {
-  const today = todayId()
-  
+export const subscribeToStateChanges = (
+  callback: (state: FeedingState) => void,
+) => {
+  const today = todayId();
+
   return supabase
     .channel('feeding_state_changes')
     .on(
@@ -259,18 +273,20 @@ export const subscribeToStateChanges = (callback: (state: FeedingState) => void)
       },
       async (payload) => {
         if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-          const newState = payload.new as any
+          const newState = payload.new as any;
           callback({
             date: newState.date,
             slots: newState.slots,
-          })
+          });
         }
-      }
+      },
     )
-    .subscribe()
-}
+    .subscribe();
+};
 
-export const subscribeToHistoryChanges = (callback: (history: FeedingRecord[]) => void) => {
+export const subscribeToHistoryChanges = (
+  callback: (history: FeedingRecord[]) => void,
+) => {
   return supabase
     .channel('feeding_history_changes')
     .on(
@@ -281,26 +297,26 @@ export const subscribeToHistoryChanges = (callback: (history: FeedingRecord[]) =
         table: 'feeding_history',
       },
       async () => {
-        const updatedHistory = await loadHistory()
-        callback(updatedHistory)
-      }
+        const updatedHistory = await loadHistory();
+        callback(updatedHistory);
+      },
     )
-    .subscribe()
-}
+    .subscribe();
+};
 
 // Check user's rate limit status
 export const getRateLimitStatus = async () => {
   try {
-    const { data, error } = await supabase.rpc('get_user_rate_limit_status')
-    
+    const { data, error } = await supabase.rpc('get_user_rate_limit_status');
+
     if (error) {
-      console.error('Error checking rate limit:', error)
-      return null
+      console.error('Error checking rate limit:', error);
+      return null;
     }
-    
-    return data
+
+    return data;
   } catch (error) {
-    console.error('Error checking rate limit:', error)
-    return null
+    console.error('Error checking rate limit:', error);
+    return null;
   }
-}
+};
