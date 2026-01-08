@@ -9,7 +9,13 @@ import type {
 
 const HISTORY_LIMIT = 50;
 
-export const todayId = () => new Date().toISOString().slice(0, 10);
+export const todayId = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
 
 const getResetHour = () => 7; // 7 AM reset time
 
@@ -42,8 +48,8 @@ export const blankState = (): FeedingState => ({
 export const loadState = async (): Promise<FeedingState> => {
   try {
     const today = todayId();
-    console.log('Loading state for date:', today);
 
+    // Load state from feeding_states table
     const { data, error } = await supabase
       .from('feeding_states')
       .select('*')
@@ -55,22 +61,49 @@ export const loadState = async (): Promise<FeedingState> => {
       return blankState();
     }
 
+    // Load history records for today to sync state
+    const { data: historyRecords } = await supabase
+      .from('feeding_history')
+      .select('*')
+      .eq('date', today);
+
+    let state: FeedingState;
+
     if (!data) {
-      return blankState();
+      state = blankState();
+    } else {
+      state = {
+        date: data.date,
+        slots: {
+          morning: data.slots?.morning ?? { slot: 'morning', done: false },
+          evening: data.slots?.evening ?? { slot: 'evening', done: false },
+        },
+      };
+
+      // Check if we need to reset
+      if (shouldReset(state.date)) {
+        await preserveTodayRecords(state);
+        return blankState();
+      }
     }
 
-    const state: FeedingState = {
-      date: data.date,
-      slots: {
-        morning: data.slots?.morning ?? { slot: 'morning', done: false },
-        evening: data.slots?.evening ?? { slot: 'evening', done: false },
-      },
-    };
+    // Sync state with history records - if history exists, mark as done
+    if (historyRecords && historyRecords.length > 0) {
+      historyRecords.forEach((record) => {
+        const slotValue = Array.isArray(record.slot) ? record.slot[0] : record.slot;
+        if (slotValue === 'morning' || slotValue === 'evening') {
+          const slot = slotValue as FeedingSlot;
+          state.slots[slot] = {
+            slot: slot,
+            done: true,
+            caretaker: record.caretaker,
+            timestamp: record.timestamp,
+          };
+        }
+      });
 
-    // Check if we need to reset
-    if (shouldReset(state.date)) {
-      await preserveTodayRecords(state);
-      return blankState();
+      // Save the synced state back to database
+      await saveState(state);
     }
 
     return state;
@@ -143,7 +176,7 @@ export const addHistoryRecord = async (
     } = await supabase.auth.getUser();
 
     const { error } = await supabase.from('feeding_history').insert({
-      slot: record.slot,
+      slot: `{${record.slot}}`,
       caretaker: record.caretaker,
       date: record.date,
       timestamp: record.timestamp,
