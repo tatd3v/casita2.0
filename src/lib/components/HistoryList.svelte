@@ -473,8 +473,6 @@
   .day-header.clickable:hover {
     background-color: rgba(203, 216, 59, 0.05);
     border-radius: 0.5rem;
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
   }
 
   .day-header h4 {
